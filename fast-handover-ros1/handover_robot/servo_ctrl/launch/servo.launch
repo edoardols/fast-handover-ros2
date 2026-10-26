@@ -1,0 +1,18 @@
+<launch>
+
+  <arg name="panda" default="true" />
+  <arg name="ur5" default="false" />
+
+
+  <node name="spacenav_node" pkg="spacenav_node" type="spacenav_node" />
+
+  <node name="spacenav_to_twist" pkg="moveit_servo" type="spacenav_to_twist" output="screen" />
+
+  <node name="servo_server" pkg="moveit_servo" type="servo_server" output="screen" >
+    <param name="parameter_ns" type="string" value="optional_parameter_namespace" />
+    <rosparam  if="$(arg panda)" ns="" command="load" file="$(find servo_ctrl)/config/config_panda.yaml" />
+    <rosparam  if="$(arg ur5)" ns="" command="load" file="$(find servo_ctrl)/config/config_ur5.yaml" />
+
+  </node>
+
+</launch>

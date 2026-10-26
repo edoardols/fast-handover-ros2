@@ -1,0 +1,20 @@
+
+
+<launch>
+
+<!-- Launch realsense2_camera node for realsense -->
+  <include file="$(find realsense2_camera)/launch/rs_rgbd.launch">
+      <arg name="camera" value="realsense2"/>
+      <arg name="align_depth" value="true"/>
+      <arg name="filters" value="pointcloud"/>
+      <arg name="serial_no" value="213622076221"/>
+  </include>
+  <include file="$(find realsense2_camera)/launch/rs_rgbd.launch">
+      <arg name="camera" value="realsense1"/>
+      <arg name="align_depth" value="true"/>
+      <arg name="filters" value="pointcloud"/>
+      <arg name="serial_no" value="213622072093"/>
+  </include>
+
+
+</launch>

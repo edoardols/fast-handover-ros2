@@ -1,0 +1,12 @@
+pkill -9 ur_robot_driver
+pkill -9 ur5_model
+pkill -9 rviz
+pkill -9 python3
+pkill -9 move_group
+pkill -9 servo_server
+pkill -9 robot_state_publisher
+pkill -9 joint_state_publisher
+pkill -9 spacenav_to_twist
+pkill -9 franka_control
+pkill -9 franka_gripper
+pkill -9 robot_state_publisher

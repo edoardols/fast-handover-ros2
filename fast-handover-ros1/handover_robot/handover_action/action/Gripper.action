@@ -1,0 +1,9 @@
+# Goal
+std_msgs/Float64 cmd_gripper	#gripper command
+std_msgs/Bool flag	
+---
+# Result
+geometry_msgs/PoseStamped current_pose	#current pose of the robot EE
+---
+# Empty Feedback
+#bool grabbed 

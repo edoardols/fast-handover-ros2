@@ -1,0 +1,39 @@
+<launch>
+  
+  <node pkg="tf" type="static_transform_publisher" name="world_to_base_link" args="0 0 0 0 0 0 1 world base_link 10"/>
+
+  <node pkg="tf" type="static_transform_publisher" name="world_to_marker_table" args="0.525 0.05 -0.01 0 0 0.7071 0.7071 world marker_table 10"/>
+
+  <node pkg="tf" type="static_transform_publisher" name="marker_table_to_realsense1_link" args="0.5814001674435142 0.21036899658717187 0.4476264182356543 -0.25999745305201943 -0.040189657804866843 0.9494481697661579 -0.17133540350418913 marker_table realsense1_link 10"/>
+
+  <node pkg="tf" type="static_transform_publisher" name="marker_table_to_realsense2_link" args="-0.5821276592147536 0.32182449667349167 0.40575526647589477 -0.029424950334439717 0.22140127866664966 -0.08875756770534318 0.9706922958866809 marker_table realsense2_link 10"/>
+
+
+   <!-- Limits for the 3D workspace used in the vision pipeline (world coordinates) -->
+  <param name="xlim" value="[0.2, 0.95]" />
+  <param name="ylim" value="[-0.5, 0.5]" />
+  <param name="zlim" value="[0.0, 0.5]" />
+  
+  <arg name="camera_type" default="realsense" />
+  <param name="camera_type" value="$(arg camera_type)"/>
+  
+  <!-- Enable debug mode to publish additional visualization msgs -->
+  <!-- <param name="debug" value="true"/> -->
+
+  <!-- Setup of camera topic names -->
+  <group if="$(eval camera_type == 'realsense')">
+    <param name="rgb_topic" value="/color/image_raw"/>
+    <param name="depth_topic" value="/aligned_depth_to_color/image_raw"/>
+    <param name="camera_info_topic" value="/aligned_depth_to_color/camera_info"/>
+    <param name="camera_frame_name" value="/_color_optical_frame"/>
+  </group>
+
+  <node pkg="handover_vision" type="hand_detector.py" name="hand_detector1"  args="realsense1" output="screen"/>
+  <node pkg="handover_vision" type="hand_detector.py" name="hand_detector2"  args="realsense2" output="screen"/>
+  <node pkg="handover_vision" type="kalman_filter_node.py" name="kalman_filter_node" output="screen"/>
+  <node pkg="handover_vision" type="object_detector.py" name="object_detector1" args="realsense1" output="screen"/>
+  <node pkg="handover_vision" type="object_detector.py" name="object_detector2" args="realsense2" output="screen"/>
+  <node pkg="handover_vision" type="pointcloud_merger.py" name="pointcloud_merger" output="screen"/>
+
+
+</launch>
