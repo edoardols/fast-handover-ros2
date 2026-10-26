@@ -5,21 +5,21 @@ The `servo_ctrl` ROS package integrates with **MoveIt Servo** to allow real-time
 
 ## Configuration Files
 
-The package includes two configuration files, `config_ur.yaml` and `config_panda.yaml`, for both **UR5** and **Panda** robots.
+The package includes two configuration files, `config_ur5.yaml` and `config_panda.yaml`, for both **UR5** and **Panda** robots.
 
 ## Launch File
 
-The `servo.launch` file can be used to start the servoing system for either robot.
+The `servo.launch.py` file can be used to start the servoing system for either robot.
 
 
 To launch for **UR5**:
 
 ```bash
-roslaunch handover_moveit_ctrl servo.launch ur5:=true
+ros2 launch servo_ctrl servo.launch.py robot:=ur5
 ```
 
 To launch for **Panda**:
 
 ```bash
-roslaunch handover_moveit_ctrl servo.launch panda:=true
+ros2 launch servo_ctrl servo.launch.py robot:=panda
 ```

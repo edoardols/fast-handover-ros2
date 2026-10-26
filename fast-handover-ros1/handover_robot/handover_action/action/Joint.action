@@ -1,8 +1,0 @@
-# Goal
-std_msgs/Float64MultiArray joint #Unused
-std_msgs/Bool rest 
----
-# Result
-std_msgs/Bool res
----
-# Empty Feedback

@@ -1,0 +1,9 @@
+# Goal
+geometry_msgs/PoseStamped goal_pose
+bool flag # used in GO_BACK to change reference frame
+---
+# Result
+geometry_msgs/PoseStamped pose
+---
+# Feedback
+# geometry_msgs/PoseStamped current_pose
