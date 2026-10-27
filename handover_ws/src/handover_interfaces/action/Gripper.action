@@ -6,4 +6,4 @@ bool flag
 geometry_msgs/PoseStamped current_pose # current pose of the robot EE
 ---
 # Feedback
-# bool grabbed 
+# bool grabbed

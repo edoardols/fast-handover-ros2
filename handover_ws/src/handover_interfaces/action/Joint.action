@@ -1,5 +1,5 @@
 # Goal
-float64[] joint
+float64[] joint #Unused
 bool rest
 ---
 # Result
