@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<robot xmlns:xacro="http://wiki.ros.org/xacro" name="robotiq_arg85">
+<robot xmlns:xacro="https://github.com/ros/xacro/wiki" name="robotiq_arg85">
   <xacro:macro name="robotiq_85" params="prefix parent">
 
     <joint name="${prefix}robotiq_joint" type="fixed">
