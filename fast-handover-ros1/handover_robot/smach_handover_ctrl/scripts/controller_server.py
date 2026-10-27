@@ -40,187 +40,60 @@ from time import sleep
 
 #from IPython import embed
 
-class JointActionServer:
-
-    def __init__(self, joint_config, controller1, movegroup):
-
-        self.joint_config = joint_config
-        self.controller1 = controller1
-        self.movegroup = movegroup
-
-        self.last_ee_pose = PoseStamped()
-
-        self.max_seconds = 60
-        self.active = False
-        
-        self.pub_traj_disp = rospy.Publisher('/move_group/display_planned_path',moveit_msgs.msg.DisplayTrajectory,queue_size=2)
-        moveit_commander.roscpp_initialize(sys.argv)
-        self.robot = moveit_commander.RobotCommander()
-        self.scene = moveit_commander.PlanningSceneInterface()
-        self.group = moveit_commander.MoveGroupCommander(self.movegroup)
-        self.group.set_planner_id("RRTstarkConfigDefault")
-        self.group.set_max_velocity_scaling_factor(1.0)
-        #self.group.allow_replanning(True)
-        #self.group.set_num_planning_attempts(50)
-        #self.group.set_planning_time(10)
-
-        self.a_server = actionlib.SimpleActionServer(
-            "joint_action_server",
-            JointAction,
-            execute_cb=self.execute_cb,
-            auto_start=False)
-
-        self.a_server.start()
-        rospy.loginfo("Started Joint ActionServer")
-
-        self.obj = CollisionObject()
-        self.sub_planning = rospy.Subscriber("/move_group/monitored_planning_scene", PlanningScene, callback=self.planning_scene_callback, queue_size=1)
-        self.apply_planning_scene = rospy.ServiceProxy('/apply_planning_scene', ApplyPlanningScene)
-        self.apply_planning_scene_req = self.apply_planning_scene(PlanningScene(name=self.obj.id, is_diff=True))
-
-        # Controller Switch Service
-        rospy.wait_for_service('/controller_manager/switch_controller')
-        self.switch_controller_service = rospy.ServiceProxy('/controller_manager/switch_controller', SwitchController)
-
-    def switch_controllers(self,controller1,controller2):
-        try:
-            req = SwitchControllerRequest()
-            req.start_controllers = [controller1]
-            req.stop_controllers = [controller2]
-            req.strictness = 0  # Best effort
-            req.start_asap = True
-            req.timeout = 2.0
-            resp = self.switch_controller_service(req)
-            return resp.ok
-        except rospy.ServiceException as e:
-            rospy.logerr("Controller switch service call failed: %s", e)
-            return False
-   
-    def GotoJoint(self, joint):
-        self.group.clear_pose_targets()
-        self.group.set_joint_value_target(joint)
-
-        # Get the plan and check the output
-        planning_output = self.group.plan()
-        planning_success = planning_output[0]  # Typically, the first element is the success flag
-        if isinstance(planning_output, tuple) and len(planning_output) > 1:
-            plan = planning_output[1]  # Assuming the second element is the plan if present
-        else:
-            plan = None
-
-        if planning_success and plan and plan.joint_trajectory.points:
-            display_trajectory = moveit_msgs.msg.DisplayTrajectory()
-            display_trajectory.trajectory_start = self.robot.get_current_state()
-            display_trajectory.trajectory.append(plan)        
-            self.pub_traj_disp.publish(display_trajectory)
-            # Uncomment the following line if manual confirmation is needed
-            #t = input('Execute the plan? (y/n): ')
-            # if t.lower() == 'y':
-            self.group.execute(plan, wait=True)
-            return True
-        else:
-            rospy.logerr("Planning failed or no valid plan was generated.")
-            return False
-
-
-    def execute_cb(self, goal):
-
-        if goal.rest.data:
-
-            if not self.switch_controllers(self.controller1,'joint_group_vel_controller'):
-                rospy.logerr("Failed to switch controllers")
-                self.a_server.set_aborted()
-                return
-
-            rospy.loginfo("Going to home position")
-            joint_config = self.joint_config 
-            result = JointResult()
-            res = self.GotoJoint(joint_config)
-            result.res.data = res
-            self.a_server.set_succeeded(result)
-
-        else:
-
-            if not self.switch_controllers(self.controller1,'joint_group_vel_controller'):
-                rospy.logerr("Failed to switch controllers")
-                self.a_server.set_aborted()
-                return
-
-            rospy.loginfo("Going to home position")
-            joint_config = self.joint_config 
-            result = JointResult()
-
-            res = self.GotoJoint(joint_config)
-            result.res.data = res
-            
-            if not self.switch_controllers('joint_group_vel_controller', self.controller1):
-                rospy.logerr("Failed to switch controllers")
-                self.a_server.set_aborted()
-                return
-
-            t=input('Go to next state? (press y)')
-            if t.lower() == 'y':
-                self.a_server.set_succeeded(result)
-                print('Go to next state!')
-        
-
-    def planning_scene_callback(self, data):
-        self.obj = data.world.collision_objects
-
 
 class PoseActionServer:
     def __init__(self, frame_base, ee_frame):
 
 
-        self.frame_base = frame_base
-        self.ee_frame = ee_frame
+        # self.frame_base = frame_base
+        # self.ee_frame = ee_frame
 
-        rospy.wait_for_service('/compute_fk',timeout=500)
-        self.fk_service = rospy.ServiceProxy('/compute_fk', GetPositionFK)
+        # rospy.wait_for_service('/compute_fk',timeout=500)
+        # self.fk_service = rospy.ServiceProxy('/compute_fk', GetPositionFK)
 
         
-        self.joint_state_subscriber = rospy.Subscriber('/joint_states', JointState, self.joint_state_callback, queue_size=1)
-        self.vel_publisher = rospy.Publisher('/servo_server/delta_twist_cmds', TwistStamped, queue_size=1)
-        self.pose_publisher = rospy.Publisher('/current_pose', PoseStamped, queue_size=1)
+        # self.joint_state_subscriber = rospy.Subscriber('/joint_states', JointState, self.joint_state_callback, queue_size=1)
+        # self.vel_publisher = rospy.Publisher('/servo_server/delta_twist_cmds', TwistStamped, queue_size=1)
+        # self.pose_publisher = rospy.Publisher('/current_pose', PoseStamped, queue_size=1)
 
-        self.goal_pose_subscriber = rospy.Subscriber('/grasp_pose', PoseStamped, self.goal_pose_callback, queue_size=1) #/goal_pose
-        self.vel_subscriber = rospy.Subscriber('/servo_server/delta_twist_cmds', TwistStamped, self.velocity_callback, queue_size=1)
+        # self.goal_pose_subscriber = rospy.Subscriber('/grasp_pose', PoseStamped, self.goal_pose_callback, queue_size=1) #/goal_pose
+        # self.vel_subscriber = rospy.Subscriber('/servo_server/delta_twist_cmds', TwistStamped, self.velocity_callback, queue_size=1)
         
         
 
-        self.current_joint_state = None
-        self.cur_pose = PoseStamped()
-        self.goal_pose = PoseStamped()
+        # self.current_joint_state = None
+        # self.cur_pose = PoseStamped()
+        # self.goal_pose = PoseStamped()
 
-        self.Kp = np.array([1.9, 1.9, 2.3]) # 1.8 1.8 2.2
-        self.Ki = np.array([0.0, 0.0, 0.0])
-        self.Kd = np.array([0.05, 0.05, 0.05])
+        # self.Kp = np.array([1.9, 1.9, 2.3]) # 1.8 1.8 2.2
+        # self.Ki = np.array([0.0, 0.0, 0.0])
+        # self.Kd = np.array([0.05, 0.05, 0.05])
 
-        self.Kp_ori = np.array([0.2, 0.2, 0.2])
-        self.Ki_ori = np.array([0.1, 0.1, 0.1])
-        self.Kd_ori = np.array([0.001, 0.001, 0.001])
+        # self.Kp_ori = np.array([0.2, 0.2, 0.2])
+        # self.Ki_ori = np.array([0.1, 0.1, 0.1])
+        # self.Kd_ori = np.array([0.001, 0.001, 0.001])
         
-        self.last_err = np.zeros(3)
-        self.last_ori_err = np.zeros(3)
+        # self.last_err = np.zeros(3)
+        # self.last_ori_err = np.zeros(3)
 
-        self.a_server = actionlib.SimpleActionServer(
-            "pose_action_server",
-            PoseAction,
-            execute_cb=self.execute_cb,
-            auto_start=False)
+        # self.a_server = actionlib.SimpleActionServer(
+        #     "pose_action_server",
+        #     PoseAction,
+        #     execute_cb=self.execute_cb,
+        #     auto_start=False)
 
-        self.a_server.start()
-        rospy.loginfo("Started Pose ActionServer")
+        # self.a_server.start()
+        # rospy.loginfo("Started Pose ActionServer")
 
-    def joint_state_callback(self, msg):
-        self.current_joint_state = msg
-        self.update_current_pose()
+    # def joint_state_callback(self, msg):
+    #     self.current_joint_state = msg
+    #     self.update_current_pose()
 
-    def goal_pose_callback(self, msg):
-        self.goal_pose = msg
+    # def goal_pose_callback(self, msg):
+    #     self.goal_pose = msg
 
-    def velocity_callback(self, msg):
-        self.vel_cmd = msg
+    # def velocity_callback(self, msg):
+    #     self.vel_cmd = msg
 
     def update_current_pose(self):
         if self.current_joint_state is None:
