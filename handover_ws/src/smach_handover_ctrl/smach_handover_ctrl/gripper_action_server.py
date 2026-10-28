@@ -13,10 +13,13 @@ class GripperActionServer:
     def __init__(self, node, arm):
         self.node = node
         self.arm = arm
+        self.max_seconds = 60
+        self.active = False
+        self.current_joint_state = None
+        
         self.cb_group = ReentrantCallbackGroup()
         self.cur_pose = PoseStamped()
 
-        # Publisher diretto
         if self.arm == "panda":
             self.gripper_pub = self.node.create_publisher(
                 Float64,
@@ -30,6 +33,8 @@ class GripperActionServer:
                 10
             )
 
+        # [LEGACY ROS 1 never implemented in the original code]
+        # self.joint_state_subscriber = rospy.Subscriber('/joint_states', JointState, self.joint_state_callback)
         self.sub_cur_pose = self.node.create_subscription(
             PoseStamped,
             '/current_pose',
@@ -45,11 +50,12 @@ class GripperActionServer:
             execute_callback=self.execute_cb,
             callback_group=self.cb_group
         )
-        self.node.get_logger().info("Started Gripper ActionServer (1:1 Porting)")
+        self.node.get_logger().info("Started Gripper ActionServer")
 
     def cur_pose_callback(self, msg):
         self.cur_pose = msg
 
+    # [LEGACY ROS 1 Modbus no more needed]
     def open_gripper(self, width=0.0):
         cmd = Float64()
         cmd.data = float(width) if self.arm == "panda" else 0.0

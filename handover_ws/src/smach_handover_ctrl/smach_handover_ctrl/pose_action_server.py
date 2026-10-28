@@ -21,14 +21,11 @@ class PoseActionServer:
         self.ee_frame = ee_frame
         self.cb_group = ReentrantCallbackGroup()
 
+        # [LEGACY ROS 1]
+        # rospy.wait_for_service('/compute_fk',timeout=500)
+        # self.fk_service = rospy.ServiceProxy('/compute_fk', GetPositionFK)
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self.node)
-
-        self.fk_cli = self.node.create_client(
-            GetPositionFK,
-            '/compute_fk',
-            callback_group=self.cb_group
-        )
 
         self.sub_joint_states = self.node.create_subscription(
             JointState,
@@ -113,17 +110,25 @@ class PoseActionServer:
             self.cur_pose.pose.orientation = t.transform.rotation
             self.pose_pub.publish(self.cur_pose)
         except Exception as e:
-            pass
+            self.node.get_logger().info(f'Failed to perform FK: {e}')
+
+    # [LEGACY ROS 1 no more needed since subscriber /grasp_pose]
+    # def WaitForGoal(self):
+    #     try:
+    #         goal = rospy.wait_for_message("/grasp_pose", PoseStamped, timeout=60)  # Wait for 60 seconds for a point cloud
+    #     except rospy.ROSException as e:
+    #         rospy.logerr("Failed to receive goal pose: %s", e)
+    #         return None
+    #     return goal
 
     async def execute_cb(self, goal_handle):
-        self.node.get_logger().info("Executing Pose Action")
         goal_msg = goal_handle.request
 
-        # Matrice di rotazione dell'End-Effector
         q_ee = [self.cur_pose.pose.orientation.x, self.cur_pose.pose.orientation.y,
                 self.cur_pose.pose.orientation.z, self.cur_pose.pose.orientation.w]
         R_EE = tf_trans.quaternion_matrix(q_ee)
 
+        # Verifying if a goal is sent directly with the action call
         if goal_msg.goal_pose.pose.position.x != 0 or goal_msg.goal_pose.pose.position.y != 0 or goal_msg.goal_pose.pose.position.z != 0:
             self.node.get_logger().info('Received goal directly from action call.')
             self.goal_pose = goal_msg.goal_pose
@@ -132,11 +137,17 @@ class PoseActionServer:
                 time.sleep(0.5)
                 offset_world = R_EE.dot([0, 0, goal_msg.goal_pose.pose.position.z, 0])
                 self.goal_pose = copy.deepcopy(self.cur_pose)
+                self.node.get_logger().info(f'Offset world: {offset_world}')
                 self.goal_pose.pose.position.x += offset_world[0]
                 self.goal_pose.pose.position.y += offset_world[1]
                 self.goal_pose.pose.position.z += offset_world[2]
         else:
             self.node.get_logger().info('Waiting for goal from /grasp_pose topic.')
+            # [LEGACY ROS 1]
+            # if self.goal_pose is None:
+            #     self.a_server.set_aborted()
+            #     rospy.logerr("No goal received, action aborted.")
+            #     return
 
         success = self.control_loop(goal_handle)
 
@@ -149,11 +160,11 @@ class PoseActionServer:
         return result
 
     def control_loop(self, goal_handle):
-        dt = 1/50.0
+        dt = 1/50.0 # OLD: 50
         position_integral = np.zeros(3)
         orientation_integral = np.zeros(3)
-        max_velocity = 0.06
-        velocity_ramp_rate = 0.025
+        max_velocity = 0.06 # Start with a lower max velocity
+        velocity_ramp_rate = 0.025 # Incremental increase per cycle
 
         velocity_command_filt = np.array([
             self.vel_cmd.twist.linear.x,
@@ -165,6 +176,7 @@ class PoseActionServer:
         start_time = time.time()
         while time.time() - start_time < 20.0:
             if goal_handle.is_cancel_requested:
+                self.node.get_logger().info('Action preempted')
                 return False
 
             current_position = np.array([self.cur_pose.pose.position.x,
@@ -175,15 +187,18 @@ class PoseActionServer:
                                       self.goal_pose.pose.position.z])
 
             position_error = goal_position - current_position
-            position_integral += position_error * dt
+            position_integral += position_error * dt # Update integral error
             position_error_derivative = (position_error - self.last_err) / dt
             self.last_err = position_error
 
+            # Calculate velocity command with PID
             raw_velocity_command = (self.Kp * position_error +
                                     self.Kd * position_error_derivative +
                                     self.Ki * position_integral)
 
+            # Limit the velocity to prevent high initial jerk
             velocity_command = np.clip(raw_velocity_command, -max_velocity, max_velocity)
+            # Gradually increase the max velocity limit
             max_velocity = min(max_velocity + velocity_ramp_rate, 1.0)
 
             current_orientation = np.array([self.cur_pose.pose.orientation.x,
@@ -214,16 +229,22 @@ class PoseActionServer:
             twist.twist.linear.y = float(velocity_command_filt[1])
             twist.twist.linear.z = float(velocity_command_filt[2])
 
+            # twist.twist.angular.x = float(angular_velocity_command[0])
+            # twist.twist.angular.y = float(angular_velocity_command[1])
+            # twist.twist.angular.z = float(angular_velocity_command[2])
+            
             twist.twist.angular.x = 0.0
             twist.twist.angular.y = 0.0
             twist.twist.angular.z = 0.0
 
             self.vel_pub.publish(twist)
 
-            if np.linalg.norm(position_error) < 0.03:
+            if np.linalg.norm(position_error) < 0.03: # Check if the goal is reached
                 self.node.get_logger().info('Goal reached')
                 return True
 
+            # [LEGACY ROS 1]
+            # rate = rospy.Rate(50)  # OLD: 50
             time.sleep(dt)
 
         return False

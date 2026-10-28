@@ -19,7 +19,6 @@ setup(
     maintainer_email='enrico.turco@iit.it',
     description='SMACH State Machine and Action Servers for fast human-to-robot handover in ROS 2.',
     license='MIT',
-    tests_require=['pytest'],
     entry_points={
         'console_scripts': [
             'controller_server = smach_handover_ctrl.controller_server:main',

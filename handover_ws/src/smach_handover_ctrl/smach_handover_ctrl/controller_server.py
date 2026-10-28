@@ -10,15 +10,12 @@ from smach_handover_ctrl.pose_action_server import PoseActionServer
 from smach_handover_ctrl.camera_action_server import CameraActionServer
 from smach_handover_ctrl.gripper_action_server import GripperActionServer
 
-# [LEGACY ROS 1]
-# import rosgraph
-# import rospy
-# if not rosgraph.is_master_online():
-#     print('Error: ROS master not running')
-#     exit(1)
-
-
 def main(args=None):
+    # [LEGACY ROS 1]
+    # if not rosgraph.is_master_online():
+    #     print('Error: ROS master not running')
+    #     exit(1)
+
     rclpy.init(args=args)
     node = Node("handover_action_server")
 
@@ -45,7 +42,6 @@ def main(args=None):
         node.get_logger().error(f"Robotic arm not supported: {robot}")
         sys.exit(1)
 
-    # Istanziazione modulare dei 4 Action Server
     joint_act_srv = JointActionServer(node=node, joint_config=joint_config, controller1=controller1, movegroup=movegroup)
     pose_act_srv = PoseActionServer(node=node, frame_base=frame_base, ee_frame=ee_frame)
     gripper_act_srv = GripperActionServer(node=node, arm=robot)

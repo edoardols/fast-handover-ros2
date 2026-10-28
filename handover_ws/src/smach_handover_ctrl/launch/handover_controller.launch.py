@@ -10,12 +10,14 @@ def generate_launch_description():
         description='Robot model: ur5 or panda'
     )
 
+    robot_param = {'robot': LaunchConfiguration('robot')}
+
     controller_server_node = Node(
         package='smach_handover_ctrl',
         executable='controller_server',
         name='controller_server',
         output='screen',
-        parameters=[{'robot': LaunchConfiguration('robot')}]
+        parameters=[robot_param]
     )
 
     planner_node = Node(
@@ -23,7 +25,7 @@ def generate_launch_description():
         executable='planner',
         name='planner',
         output='screen',
-        parameters=[{'robot': LaunchConfiguration('robot')}]
+        parameters=[robot_param]
     )
 
     return LaunchDescription([
