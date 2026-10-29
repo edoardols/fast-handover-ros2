@@ -1,0 +1,77 @@
+handover_ws/
+└── src/
+    ├── handover_interfaces/                 # [ament_cmake] Pacchetto unico per messaggi e azioni custom
+        # I tipi nativi sono stati cambiati e ora sono coerenti con ROS2
+    │   ├── action/
+    │   │   ├── Gripper.action
+    │   │   ├── Joint.action
+    │   │   └── Pose.action
+    │   ├── msg/
+    │   │   └── Keypoints2D.msg
+    │   ├── CMakeLists.txt
+    │   └── package.xml
+    │
+    ├── handover_moveit_config/              # [ament_cmake] Launch e configurazioni MoveIt 2 & ros2_control
+    │   ├── config/
+    │   │   ├── panda/                       # Parametri MoveIt 2 e mock hardware per Panda
+    │   │   │   └── ros2_controllers.yaml
+    │   │   └── ur5/                         # Parametri MoveIt 2 e mock hardware per UR5
+    │   │       └── ros2_controllers.yaml
+    │   ├── launch/
+    │   │   ├── panda_moveit.launch.py       # Avvio MoveIt 2 + RVIZ per Panda (mock/sim)
+    │   │   └── ur5_moveit.launch.py         # Avvio MoveIt 2 + RVIZ per UR5 (mock/sim)
+    │   ├── CMakeLists.txt
+    │   └── package.xml
+    │
+    ├── servo_ctrl/                          # [ament_cmake] Configurazione di MoveIt Servo per ROS 2
+    │   ├── config/
+    │   │   ├── config_panda.yaml            # Parametri MoveIt Servo (Panda)
+    │   │   └── config_ur5.yaml              # Parametri MoveIt Servo (UR5)
+    │   ├── launch/
+    │   │   └── servo.launch.py              # Avvio del nodo nativo C++ servo_node
+    │   ├── CMakeLists.txt
+    │   └── package.xml
+    │
+    ├── smach_handover_ctrl/                 # [ament_python] Logica di controllo e Macchina a Stati
+    │   ├── smach_handover_ctrl/             # Cartella sorgente Python (modulo)
+    │   │   ├── __init__.py
+            # Gli action server iniziali sono stati divisi in 4 file separati per semplificarne la lettura
+    │   │   ├── joint_action_server.py       # Gestione movimenti joint & switch controllers
+    │   │   ├── pose_action_server.py        # Controllo cartesiano dinamico PID
+    │   │   ├── camera_action_server.py      # Inseguimento mano/oggetto tramite vision
+    │   │   ├── gripper_action_server.py     # Comando della pinza
+    │   │   ├── controller_server.py         # Main node che istanzia ed esegue i 4 Action Server (rclpy + MoveIt 2 Action Clients)
+    │   │   └── planner.py                   # SMACH State Machine (rclpy + tf_transformations)
+    │   ├── resource/
+    │   │   └── smach_handover_ctrl
+    │   ├── launch/
+    │   │   └── handover_controller.launch.py
+    │   ├── CMakeLists.txt
+    │   ├── package.xml                      # Format 3 (ament_python)
+    │   └── setup.py                         # Definizione degli entry_points (console_scripts)
+    │
+    ├── handover_vision/                     # [ament_python] Pipeline di percezione e visione 3D
+    │   ├── handover_vision/                 # Cartella sorgente Python (libreria interna)
+    │   │   ├── __init__.py
+    │   │   ├── utils.py                     # Funzioni di utilità e conversioni tf_transformations
+    │   │   ├── Segmentator_YOLOv8.py        # Wrapper di inferenza YOLOv8
+    │   │   ├── hand_detector.py             # MediaPipe Hand Tracking
+    │   │   ├── object_detector.py           # YOLOv8 + Open3D PointCloud extraction
+    │   │   ├── kalman_filter_node.py        # Filtro di Kalman per la fusione multi-camera
+    │   │   └── pointcloud_merger.py         # Unione pointcloud e bounding box 3D
+    │   ├── launch/
+    │   │   ├── camera.launch.py             # Launch file per i driver RealSense (realsense2_camera)
+    │   │   └── perception_pipeline.launch.py# Avvio integrato dei nodi di visione
+    │   ├── rviz/
+    │   │   └── perception_pipeline.rviz
+    │   ├── resource/
+    │   │   └── handover_vision
+    │   ├── package.xml
+    │   └── setup.py
+    │
+    └── robotiq_arg85_description/           # [ament_cmake] Descrizione URDF/Xacro ROS 2 del gripper Robotiq (per UR5)
+        ├── urdf/
+            # robotiq_arg85 aggiornato con i {prefix} per evitare possibili conflitti delle TF
+        ├── meshes/
+        ├── CMakeLists.txt
+        └── package.xml
