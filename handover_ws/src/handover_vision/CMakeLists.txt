@@ -7,22 +7,20 @@ endif()
 
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
+find_package(rclpy REQUIRED)
 
-# Installazione del modulo Python interno (handover_vision/)
 ament_python_install_package(${PROJECT_NAME})
 
-# Installazione dei nodi eseguibili Python
 install(PROGRAMS
-  nodes/hand_detector.py
-  nodes/object_detector.py
-  nodes/kalman_filter_node.py
-  nodes/pointcloud_merger.py
+  handover_vision/handover_vision/hand_detector.py
+  handover_vision/handover_vision/kalman_filter_node.py
+  handover_vision/handover_vision/object_detector.py
+  handover_vision/handover_vision/pointcloud_merger.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
-# Installazione delle cartelle di supporto (config, launch, rviz)
 install(
-  DIRECTORY config launch rviz
+  DIRECTORY launch rviz
   DESTINATION share/${PROJECT_NAME}
 )
 

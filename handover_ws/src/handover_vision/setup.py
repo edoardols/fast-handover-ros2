@@ -12,7 +12,6 @@ setup(
         ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
-        (os.path.join('share', package_name, 'config'), glob('config/*.yaml')),
         (os.path.join('share', package_name, 'rviz'), glob('rviz/*.rviz')),
     ],
     install_requires=['setuptools'],
@@ -23,10 +22,11 @@ setup(
     license='MIT',
     entry_points={
         'console_scripts': [
-            'hand_detector = nodes.hand_detector:main',
-            'object_detector = nodes.object_detector:main',
-            'kalman_filter_node = nodes.kalman_filter_node:main',
-            'pointcloud_merger = nodes.pointcloud_merger:main',
+            'hand_detector = handover_vision.hand_detector:main',
+            'object_detector = handover_vision.object_detector:main',
+            'kalman_filter_node = handover_vision.kalman_filter_node:main',
+            'pointcloud_merger = handover_vision.pointcloud_merger:main',
         ],
     },
 )
+

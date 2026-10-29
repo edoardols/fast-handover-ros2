@@ -4,8 +4,7 @@ import pyrealsense2 as rs
 import open3d 
 from geometry_msgs.msg import Pose
 import numpy as np 
-from tf.transformations import quaternion_matrix
-import rospy
+from tf_transformations import quaternion_matrix
 import sensor_msgs.point_cloud2 as pc2
 import quaternion
 from std_msgs.msg import Header
@@ -26,30 +25,33 @@ BIT_MOVE_8 = 2 ** 8
 convert_rgbUint32_to_tuple = lambda rgb_uint32: (
     (rgb_uint32 & 0x00ff0000) >> 16, (rgb_uint32 & 0x0000ff00) >> 8, (rgb_uint32 & 0x000000ff)
 )
-convert_rgbFloat_to_tuple = lambda rgb_float: convert_rgbUint32_to_tuple(
-    int(cast(pointer(c_float(rgb_float)), POINTER(c_uint32)).contents.value)
-)
+def convert_rgbFloat_to_tuple(rgb_float):
+    # [LEGACY ROS 1 better to use a direct cast]
+    # convert_rgbFloat_to_tuple = lambda rgb_float: convert_rgbUint32_to_tuple(int(cast(pointer(c_float(rgb_float)), POINTER(c_uint32)).contents.value))
+    rgb_uint32 = np.float32(rgb_float).view(np.uint32)
+    return convert_rgbUint32_to_tuple(rgb_uint32)
 
 
 def load_intrinsics(camera_info_msg):
     intrinsics = rs.intrinsics()
     intrinsics.width = camera_info_msg.width
     intrinsics.height = camera_info_msg.height
-    intrinsics.ppx = camera_info_msg.K[2]
-    intrinsics.ppy = camera_info_msg.K[5]
-    intrinsics.fx = camera_info_msg.K[0]
-    intrinsics.fy = camera_info_msg.K[4]
+    # In ROS 2 msg, it's lower case 'k'
+    intrinsics.ppx = camera_info_msg.k[2]
+    intrinsics.ppy = camera_info_msg.k[5]
+    intrinsics.fx = camera_info_msg.k[0]
+    intrinsics.fy = camera_info_msg.k[4]
     intrinsics.model = rs.distortion.none
-    intrinsics.coeffs = [i for i in camera_info_msg.D]
+    intrinsics.coeffs = [i for i in camera_info_msg.d]
     return intrinsics
 
 def load_intrinsic_o3d(camera_info_msg):
     width = camera_info_msg.width
     height = camera_info_msg.height
-    ppx = camera_info_msg.K[2]
-    ppy = camera_info_msg.K[5]
-    fx = camera_info_msg.K[0]
-    fy = camera_info_msg.K[4]
+    ppx = camera_info_msg.k[2]
+    ppy = camera_info_msg.k[5]
+    fx = camera_info_msg.k[0]
+    fy = camera_info_msg.k[4]
     return open3d.camera.PinholeCameraIntrinsic(width, height, fx, fy, ppx, ppy)
 
 
@@ -59,7 +61,7 @@ def transform_pose(pose, trans, rot):
     # Apply translation
     trans_matrix[:3, 3] = trans
     # trans_matrix[:3, :3] = np.transpose(trans_matrix[:3, :3])
-
+    
     # Apply transformation to pose
     new_pose = Pose()
     # new_pose.header.frame_id = "/world"  # Replace with your desired frame
@@ -70,14 +72,13 @@ def transform_pose(pose, trans, rot):
     #                                 pose.pose.position.y,
     #                                 pose.pose.position.z,
     #                                 1.0])[:3]
-    
+
     old_position = np.array(([pose.position.x, pose.position.y, pose.position.z, 1])).reshape((4, 1))
     new_position = np.dot(trans_matrix, old_position)
-    new_pose.position.x, new_pose.position.y, new_pose.position.z = new_position[0:3]
+    new_pose.position.x, new_pose.position.y, new_pose.position.z = new_position[0:3, 0]
 
     # Apply transformation to orientation
     # Note: Assuming orientation is in quaternion format
-
     q = quaternion.as_quat_array(np.array(([
             pose.orientation.w,
             pose.orientation.x,
@@ -89,14 +90,10 @@ def transform_pose(pose, trans, rot):
 
     return new_pose
 
-
-
 # Convert the datatype of point cloud from Open3D to ROS PointCloud2 (XYZRGB only)
-def convertCloudFromOpen3dToRos(open3d_cloud, frame_id="odom"):
-    # Set "header"
-    header = Header()
-    header.stamp = rospy.Time.now()
-    header.frame_id = frame_id
+# def convertCloudFromOpen3dToRos(open3d_cloud, frame_id="odom"):
+def convertCloudFromOpen3dToRos(open3d_cloud, header):
+    # header.frame_id = frame_id
 
     # Set "fields" and "cloud_data"
     points = np.asarray(open3d_cloud.points)
@@ -114,7 +111,6 @@ def convertCloudFromOpen3dToRos(open3d_cloud, frame_id="odom"):
     # create ros_cloud
     return pc2.create_cloud(header, fields, cloud_data)
 
-
 def convertCloudFromRosToOpen3d(ros_cloud):
     # Get cloud data from ros_cloud
     field_names = [field.name for field in ros_cloud.fields]
@@ -131,11 +127,11 @@ def convertCloudFromRosToOpen3d(ros_cloud):
         IDX_RGB_IN_FIELD = 3  # x, y, z, rgb
 
         # Get xyz
-        xyz = [(x, y, z) for x, y, z, rgb in cloud_data]  # (why cannot put this line below rgb?)
+        xyz = [(x, y, z) for x, y, z, rgb in cloud_data] # (why cannot put this line below rgb?)
 
         # Get rgb
         # Check whether int or float
-        if type(cloud_data[0][IDX_RGB_IN_FIELD]) == float:  # if float (from pcl::toROSMsg)
+        if type(cloud_data[0][IDX_RGB_IN_FIELD]) == float: # if float (from pcl::toROSMsg)
             rgb = [convert_rgbFloat_to_tuple(rgb) for x, y, z, rgb in cloud_data]
         else:
             rgb = [convert_rgbUint32_to_tuple(rgb) for x, y, z, rgb in cloud_data]
@@ -144,8 +140,7 @@ def convertCloudFromRosToOpen3d(ros_cloud):
         open3d_cloud.points = open3d.utility.Vector3dVector(np.array(xyz))
         open3d_cloud.colors = open3d.utility.Vector3dVector(np.array(rgb) / 255.0)
     else:
-        xyz = [(x, y, z) for x, y, z in cloud_data]  # get xyz
+        xyz = [(x, y, z) for x, y, z in cloud_data] # get xyz
         open3d_cloud.points = open3d.utility.Vector3dVector(np.array(xyz))
 
-    # return
     return open3d_cloud
