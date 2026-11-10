@@ -1,0 +1,34 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      Enabled: true
+      Frame: camera_color_optical_frame
+      Line Style: Lines
+    - Class: rviz_default_plugins/TF
+      Name: TF
+      Enabled: true
+      Marker Scale: 0.3
+      Show Axes: true
+      Show Names: true
+    - Class: rviz_default_plugins/Image
+      Name: Telecamera RGB
+      Enabled: true
+      Topic:
+        Value: /camera/camera/color/image_raw
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+  Global Options:
+    Fixed Frame: camera_color_optical_frame
+    Frame Rate: 30
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 2.0
+      Target Frame: camera_color_optical_frame

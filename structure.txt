@@ -61,17 +61,10 @@ handover_ws/
     │   │   └── pointcloud_merger.py         # Unione pointcloud e bounding box 3D
     │   ├── launch/
     │   │   ├── camera.launch.py             # Launch file per i driver RealSense (realsense2_camera)
-    │   │   └── perception_pipeline.launch.py# Avvio integrato dei nodi di visione
-    │   ├── rviz/
-    │   │   └── perception_pipeline.rviz
-    │   ├── resource/
-    │   │   └── handover_vision
-    │   ├── package.xml
-    │   └── setup.py
-    │
-    └── robotiq_arg85_description/           # [ament_cmake] Descrizione URDF/Xacro ROS 2 del gripper Robotiq (per UR5)
-        ├── urdf/
-            # robotiq_arg85 aggiornato con i {prefix} per evitare possibili conflitti delle TF
-        ├── meshes/
-        ├── CMakeLists.txt
-        └── package.xml
+        │   └── perception_pipeline.launch.py# Avvio integrato dei nodi di visione
+        ├── rviz/
+        │   └── perception_pipeline.rviz
+        ├── resource/
+        │   └── handover_vision
+        ├── package.xml
+        └── setup.py
