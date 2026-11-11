@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import math
 from cv_bridge import CvBridge
 import rclpy
@@ -23,12 +24,8 @@ class HandEstimation(Node):
     def __init__(self):
         super().__init__('hand_detector')
         
-        self.declare_parameter('camera_name', 'camera')
-        camera_arg = self.get_parameter('camera_name').value
-        if len(sys.argv) > 1 and not sys.argv[1].startswith('__'):
-             self.camera = sys.argv[1]
-        else:
-             self.camera = camera_arg
+        self.declare_parameter('camera_name', 'default_camera')
+        self.camera = self.get_parameter('camera_name').get_parameter_value().string_value
 
         self.declare_parameter("/rgb_topic", "/color/image_raw")
         self.declare_parameter("/depth_topic", "/aligned_depth_to_color/image_raw")
@@ -40,7 +37,7 @@ class HandEstimation(Node):
         self.declare_parameter('/ylim', '[-0.35, 0.35]')
         self.declare_parameter('/zlim', '[0.04, 0.5]')
 
-        rgb_topic = self.camera + self.get_parameter("/rgb_topic").value
+        rgb_topic = self.camera + self.get_parameter("/rgb_topic").get_parameter_value().string_value
         depth_topic = self.camera + self.get_parameter("/depth_topic").value
         camera_info_topic = self.camera + self.get_parameter("/camera_info_topic").value
         

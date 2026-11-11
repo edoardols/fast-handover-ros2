@@ -20,5 +20,5 @@
 
     tag:
       ids: [0, 1]         # tag IDs for which to publish transform
-      frames: ["raw_tag_base", "raw_tag_cube"]   # frame names
+      frames: ["AprilTag_base", "AprilTag_place"]   # frame names
       sizes:  [0.060, 0.060]     # tag-specific edge size, overrides the default 'size'

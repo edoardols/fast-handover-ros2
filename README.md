@@ -1,71 +1,67 @@
-# Fast Human-Robot Handover ROS2
+### STEP 1: Installation ROS2 (Humble)
+Ubuntu 22.04.5 LTS (Jammy Jellyfish): https://releases.ubuntu.com/jammy/
+ROS 2 (Humble): https://docs.ros.org/en/humble/Installation/Alternatives/Ubuntu-Development-Setup.html
 
-This repository provides the packages to perform vision-based human-to-robot fast handover.
-The code is tested on **Ubuntu 20.04** with **ROS Noetic** and is hereby released for reproducibility. 
+source /opt/ros/humble/setup.bash
 
-The system was developed for the Robotic Grasping and Manipulation Competition (RGMC) - Sub-Track on Human-to-Robot Handovers and won two consecutive editions ([2024 RGMC](https://corsmal.eecs.qmul.ac.uk/rgm24icra/), [2025 RGMC](https://corsmal.github.io/rgmc2025-handover-track/)).  For more details, refer to the [paper](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=11460206). 
- 
-### RGMC ICRA 24
-[![RGMC ICRA 24 - Handover](https://img.youtube.com/vi/4wzR3eVm9P0/0.jpg)](https://www.youtube.com/watch?v=4wzR3eVm9P0)
+### STEP 2: Installation Kortex (Kinova driver)
+Kinova Gen3 7 dof + driver ROS2 Kortex: https://github.com/Kinovarobotics/ros2_kortex/tree/humble
 
-### RGMC ICRA 25
-[![RGMC ICRA 25 - Handover](https://img.youtube.com/vi/FGFlR_2N6G4/0.jpg)](https://www.youtube.com/watch?v=FGFlR_2N6G4)
+1. Open terminal
+    - cd fast-handover-ros2
 
----
-### Reference
+2. update system tools
+    - sudo apt update
+    - sudo apt install python3-colcon-common-extensions python3-vcstool
 
-Please acknowledge the authors in any academic publication that uses parts of these codes.
+3. building from source
+    - git clone -b humble --single-branch https://github.com/Kinovarobotics/ros2_kortex.git src/ros2_kortex
+    - vcs import src --skip-existing --input src/ros2_kortex/ros2_kortex.humble.repos
+    - vcs import src --skip-existing --input src/ros2_kortex/ros2_kortex-not-released.humble.repos
 
-```
-@article{turco2026fast,
-  title={Fast Human-Robot Handover using a Vision-Based Pipeline}, 
-  author={Turco, Enrico and Castellani, Chiara and Salvietti, Gionata and Pozzi, Maria},
-  journal={IEEE Robotics and Automation Practice}, 
-  volume={1},
-  number={},
-  pages={66-70},
-  year={2026},
-  publisher={IEEE},
-  doi={10.1109/RAP.2026.3680049}}
-```
+4. additional simulation packages
+    - vcs import src --skip-existing --input src/ros2_kortex/simulation.humble.repos
 
----
+5. install dependences
+    - rosdep install --from-paths src --ignore-src -y
 
-Our setup utilizes two PCs connected to the same local network, one for the **vision pipeline**, and the other for **robot control**. For the setup of the PC running the vision pipeline, please refer to the relative [guide](https://github.com/SIRSIIT/fast-handover/blob/main/handover_vision/README.md), while for the robot control, please refer to [this one](https://github.com/SIRSIIT/fast-handover/blob/main/handover_robot/README.md). 
+6. build the workspace
+    - colcon build --symlink-install
 
-## Network Configuration
+7. check installation
+    - ros2 launch kortex_description view_robot.launch.py
 
-This system assumes the following network layout:
+8. MoveIt: https://moveit.ai/install-moveit2/binary/ e docs: https://moveit.picknik.ai/main/index.html
+    - sudo apt install ros-humble-kinova-gen3-7dof-robotiq-2f-85-moveit-config
+    - sudo apt install ros-humble-moveit
 
-- The two PCs are connected to the `172.31.1.*` subnet.
-- The robot is on a separate network: `172.32.1.*`.
+9. Cyclone DDS
+    - sudo apt install ros-humble-rmw-cyclonedds-cpp
+    export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 
-> ⚙️ You can optionally adjust these settings if needed.
+10. Test Virtual Hardware
+    - ros2 launch kinova_gen3_7dof_robotiq_2f_85_moveit_config robot.launch.py \
+    robot_ip:=yyy.yyy.yyy.yyy \
+    use_fake_hardware:=true
 
+11. Test Real-Life Hardware
+    - ros2 launch kinova_gen3_7dof_robotiq_2f_85_moveit_config robot.launch.py \
+    robot_ip:=192.168.1.10
 
-### Vision PC (ROS Master):
-- **IP Address:** `172.31.1.1`  
-- **Netmask:** `255.255.255.0`
+### STEP 3: Install MoveIt Task Constructor (MTC)
+MoveIt Task Constructor (Humble): https://moveit.picknik.ai/main/doc/tutorials/pick_and_place_with_moveit_task_constructor/pick_and_place_with_moveit_task_constructor.html#getting-started
 
-### Robot Control PC:
-- **IP Address:** `172.31.1.2`  
-- **Netmask:** `255.255.255.0`
+1. cd ~/fast-handover-ros2/src
+2. git clone -b <branch> https://github.com/moveit/moveit_task_constructor.git
+3. rosdep install --from-paths . --ignore-src --rosdistro $ROS_DISTRO
 
-In this setup, the **vision PC** serves as the **ROS master**, running `roscore`.
+### STEP 4: Build and istall workspace
+To build the workspace
+1. Open terminal
+    - cd fast-handover-ros2
 
----
+2. Build the workspace
+    - colcon build
 
-### ROS Environment Setup
-
-If you change any IP addresses, make sure to update your `~/.bashrc` file on both machines and inside Docker containers:
-
-```bash
-export ROS_MASTER_URI=http://172.31.1.1:11311/
-export ROS_IP=172.31.1.1
-```
-
-Then, apply the changes:
-
-```bash
-source ~/.bashrc
-```
+3. If the required dependancy are not installed
+    - rosdep install --from-paths src --ignore-src -y

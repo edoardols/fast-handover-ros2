@@ -7,7 +7,6 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
-find_package(moveit_task_constructor_core REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(moveit_core REQUIRED)
 find_package(moveit_ros_planning_interface REQUIRED)
@@ -25,6 +24,7 @@ ament_target_dependencies(camera_tf_broadcaster
   tf2_ros
   tf2_geometry_msgs
   geometry_msgs
+  sensor_msgs
 )
 
 install(DIRECTORY
