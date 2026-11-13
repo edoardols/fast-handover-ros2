@@ -15,11 +15,23 @@ def generate_launch_description():
 
     pkg_handover_camera = get_package_share_directory('handover_camera')
     camera_launch_file = os.path.join(pkg_handover_camera, 'launch', 'camera.launch.py')
+    tags_launch_file = os.path.join(pkg_handover_camera, 'launch', 'tags.launch.py')
     
     rviz_config_file = os.path.join(pkg_handover_vision, 'rviz', 'vision_debug.rviz')
 
+    camera_name1 = "realsense1"
+    camera_name2 = "camera"
+    xlim = '[-1.0, 1.0]'
+    ylim = '[-1.0, 1.0]'
+    zlim = '[-1.0, 1.0]'
+
     camera_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(camera_launch_file),
+        launch_arguments={'camera_name': camera_name1}.items(),
+    )
+
+    tags_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(tags_launch_file),
         launch_arguments={},
     )
 
@@ -32,40 +44,66 @@ def generate_launch_description():
         parameters=[],
     )
 
-    hand_detector_node = Node(
+    hand_detector_node1 = Node(
         package="handover_vision",
         executable="hand_detector.py",
-        name="hand_detector1",
+        name=f"hand_detector_{camera_name1}",
         output="screen",
-        parameters=['realsense1'],
+        parameters=[
+            {'camera_name': camera_name1},
+            {'/xlim': xlim},
+            {'/ylim': ylim},
+            {'/zlim': zlim},
+            ],
     )
 
-    object_detector_node = Node(
+    object_detector_node1 = Node(
         package="handover_vision",
         executable="object_detector.py",
+        name=f"object_detector_node_{camera_name1}",
         output="screen",
-        parameters=[],
+        parameters=[
+            {'camera_name': camera_name1},
+            {'/xlim': xlim},
+            {'/ylim': ylim},
+            {'/zlim': zlim},
+        ],
     )
 
     kalman_filter_node = Node(
         package="handover_vision",
         executable="kalman_filter.py",
+        name="kalman_filter_node",
         output="screen",
-        parameters=[],
+        parameters=[
+            {'camera_name1': camera_name1},
+            {'camera_name2': camera_name2},
+            {'/xlim': xlim},
+            {'/ylim': ylim},
+            {'/zlim': zlim},
+        ],
     )
 
     pointcloud_merger_node = Node(
         package="handover_vision",
         executable="pointcloud_merger.py",
+        name="pointcloud_merger_node",
         output="screen",
-        parameters=[],
+        parameters=[
+            {'camera_name1': camera_name1},
+            {'camera_name2': camera_name2},
+            {'/xlim': xlim},
+            {'/ylim': ylim},
+            {'/zlim': zlim},
+        ],
     )
 
     return LaunchDescription(
         [
-            camera_launch,
-            hand_detector_node,
-            object_detector_node,
+            # camera_launch,
+            tags_launch,
+            hand_detector_node1,
+            object_detector_node1,
             kalman_filter_node,
             pointcloud_merger_node,
             rviz_node,

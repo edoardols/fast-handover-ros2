@@ -2,10 +2,10 @@
 
 import pyrealsense2 as rs
 import open3d 
-from geometry_msgs.msg import Pose
+from geometry_msgs.msg import Pose, Quaternion
 import numpy as np 
 from tf_transformations import quaternion_matrix
-import sensor_msgs.point_cloud2 as pc2
+import sensor_msgs_py.point_cloud2 as pc2
 import quaternion
 from std_msgs.msg import Header
 from sensor_msgs.msg import PointCloud2, PointField
@@ -86,7 +86,9 @@ def transform_pose(pose, trans, rot):
             pose.orientation.z])))
     R = quaternion.as_rotation_matrix(q)
     R_new = np.dot(trans_matrix[:3, :3], R)
-    new_pose.orientation = quaternion.from_rotation_matrix(R_new)
+    # new_pose.orientation = quaternion.from_rotation_matrix(R_new)
+    q_new = quaternion.from_rotation_matrix(R_new)
+    new_pose.orientation = Quaternion(x=float(q_new.x), y=float(q_new.y), z=float(q_new.z), w=float(q_new.w))
 
     return new_pose
 
@@ -137,6 +139,7 @@ def convertCloudFromRosToOpen3d(ros_cloud):
             rgb = [convert_rgbUint32_to_tuple(rgb) for x, y, z, rgb in cloud_data]
 
         # combine
+        xyz = np.array([[p[0], p[1], p[2]] for p in cloud_data], dtype=np.float64)
         open3d_cloud.points = open3d.utility.Vector3dVector(np.array(xyz))
         open3d_cloud.colors = open3d.utility.Vector3dVector(np.array(rgb) / 255.0)
     else:

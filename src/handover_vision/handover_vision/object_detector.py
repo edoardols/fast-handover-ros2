@@ -6,13 +6,13 @@ import message_filters
 from sensor_msgs.msg import Image, CameraInfo, PointCloud2
 import numpy as np
 from geometry_msgs.msg import PoseStamped, Pose, Vector3, Transform, TransformStamped, Quaternion, Vector3Stamped, Point
-from src.handover_vision.handover_vision.Segmentator_YOLOv8 import Segmentator
+from handover_vision.Segmentator_YOLOv8 import Segmentator
 import quaternion
 import math
 from std_msgs.msg import String, Header
-from src.handover_vision.handover_vision.utils import load_intrinsics, load_intrinsic_o3d, transform_pose
+from handover_vision.utils import load_intrinsics, load_intrinsic_o3d, transform_pose
 import open3d as o3d
-from sensor_msgs import point_cloud2 as pc2f
+from sensor_msgs_py import point_cloud2 as pc2f
 from collections import deque
 import tf2_ros
 import sys 
@@ -21,28 +21,28 @@ import ast
 class Extractor(Node):
 
     def __init__(self):
-        super().__init__('object_detector2')
+        super().__init__('object_detector_node')
 
         self.declare_parameter('camera_name', 'camera')
-        camera_arg = self.get_parameter('camera_name').value
-        if len(sys.argv) > 1 and not sys.argv[1].startswith('__'):
-             self.camera = sys.argv[1]
-        else:
-             self.camera = camera_arg
+        self.camera = self.get_parameter('camera_name').get_parameter_value().string_value
 
-        self.declare_parameter("/rgb_topic", "/color/image_raw")
         self.declare_parameter("/depth_topic", "/aligned_depth_to_color/image_raw")
         self.declare_parameter("/camera_info_topic", "/color/camera_info")
+        self.declare_parameter("/rgb_topic", "/color/image_raw")
 
-        self.rgb_topic = self.camera + self.get_parameter("/rgb_topic").value
-        self.depth_topic = self.camera + self.get_parameter("/depth_topic").value
-        self.camera_info_topic = self.camera + self.get_parameter("/camera_info_topic").value
+        self.depth_topic = f"/camera/{self.camera}{self.get_parameter('/depth_topic').get_parameter_value().string_value}"
+        self.camera_info_topic = f"/camera/{self.camera}{self.get_parameter('/camera_info_topic').get_parameter_value().string_value}"
+        self.rgb_topic = f"/camera/{self.camera}{self.get_parameter('/rgb_topic').get_parameter_value().string_value}"
 
-        self.frame = self.camera+"_color_optical_frame"
+        self.camera_link = f"{self.camera}_color_optical_frame"
 
+        # Retrieve workspace limits
         self.declare_parameter('/xlim', '[0.2, 0.75]')
         self.declare_parameter('/ylim', '[-0.35, 0.35]')
         self.declare_parameter('/zlim', '[0.04, 0.5]')
+        self.xlim = ast.literal_eval(self.get_parameter('/xlim').get_parameter_value().string_value)
+        self.ylim = ast.literal_eval(self.get_parameter('/ylim').get_parameter_value().string_value)
+        self.zlim = ast.literal_eval(self.get_parameter('/zlim').get_parameter_value().string_value)
 
         # [LEGACY ROS 1]
         # listener = tf.TransformListener()
@@ -54,11 +54,6 @@ class Extractor(Node):
         self.trans = [0.0, 0.0, 0.0]
         self.rot = [0.0, 0.0, 0.0, 1.0]
         self.tf_ready = False
-
-        # Retrieve workspace limits
-        self.xlim = ast.literal_eval(self.get_parameter('/xlim').value)
-        self.ylim = ast.literal_eval(self.get_parameter('/ylim').value)
-        self.zlim = ast.literal_eval(self.get_parameter('/zlim').value)
       
         self.bridge = CvBridge()
         self.width = 0
@@ -72,17 +67,17 @@ class Extractor(Node):
         self.imageRGB_sub = message_filters.Subscriber(self, Image, self.rgb_topic)
         self.depth_sub = message_filters.Subscriber(self, Image, self.depth_topic)
 
-        self.ts = message_filters.TimeSynchronizer([self.imageRGB_sub, self.depth_sub], 1) 
+        self.ts = message_filters.ApproximateTimeSynchronizer([self.imageRGB_sub, self.depth_sub], 1, slop=0.05) 
         self.ts.registerCallback(self.callback)
 
-        object_depth_img_topic = self.camera + "_object_depth_img"
-        object_pc_topic = self.camera + "_object_pc" 
-        debug_img_topic = self.camera + "_yolo_img" 
+        self.object_depth_img_topic = f"{self.camera}_object_depth_img"
+        self.object_pc_topic = f"{self.camera}_object_pc"
+        self.debug_img_topic = f"{self.camera}_yolo_img"
 
         # Publishers
-        self.output_depth = self.create_publisher(Image, object_depth_img_topic, 1)
-        self.object_pc_pub = self.create_publisher(PointCloud2, object_pc_topic, 1)
-        self.debug = self.create_publisher(Image, debug_img_topic, 1)
+        self.output_depth = self.create_publisher(Image, self.object_depth_img_topic, 1)
+        self.object_pc_pub = self.create_publisher(PointCloud2, self.object_pc_topic, 1)
+        self.debug = self.create_publisher(Image, self.debug_img_topic, 1)
 
     def camera_info_callback(self, msg):
         if self.intrinsics is None:
@@ -95,7 +90,7 @@ class Extractor(Node):
              
         if not self.tf_ready:
              try:
-                 t = self.tf_buffer.lookup_transform(self.frame, "world", rclpy.time.Time())
+                 t = self.tf_buffer.lookup_transform(self.camera_link, "world", rclpy.time.Time())
                  self.trans = [t.transform.translation.x, t.transform.translation.y, t.transform.translation.z]
                  self.rot = [t.transform.rotation.x, t.transform.rotation.y, t.transform.rotation.z, t.transform.rotation.w]
                  self.tf_ready = True
@@ -116,7 +111,7 @@ class Extractor(Node):
         final_depth = np.zeros(depth_frame_cv.shape)
 
         obj_masks = list()
-        remove_items = [56, 59, 60, 63, 8, 1, 0]                                                      
+        remove_items = [56, 59, 60, 63, 8, 1, 0]
         for i in range(len(classes)):
             if classes[i] not in remove_items:
                 if len(masks.shape) > 2:

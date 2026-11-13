@@ -6,11 +6,11 @@ import rclpy
 from rclpy.node import Node
 import mediapipe as mp
 import numpy as np
-from sensor_msgs import point_cloud2 as pc2f
+from sensor_msgs_py import point_cloud2 as pc2f
 from std_msgs.msg import String, Float64
 import cv2
 import message_filters
-from src.handover_vision.handover_vision.utils import load_intrinsics, transform_pose
+from handover_vision.utils import load_intrinsics, transform_pose
 from sensor_msgs.msg import Image, CameraInfo
 import pyrealsense2 as rs
 from geometry_msgs.msg import PoseArray, Pose, Point, Quaternion, PoseStamped
@@ -24,27 +24,29 @@ class HandEstimation(Node):
     def __init__(self):
         super().__init__('hand_detector')
         
-        self.declare_parameter('camera_name', 'default_camera')
+        self.declare_parameter('camera_name', 'camera')
         self.camera = self.get_parameter('camera_name').get_parameter_value().string_value
+        # print(f"Using camera: {self.camera}")
 
-        self.declare_parameter("/rgb_topic", "/color/image_raw")
         self.declare_parameter("/depth_topic", "/aligned_depth_to_color/image_raw")
         self.declare_parameter("/camera_info_topic", "/color/camera_info")
+        self.declare_parameter("/rgb_topic", "/color/image_raw")
 
-        camera_link = self.camera + "_color_optical_frame"
+        self.depth_topic = f"/camera/{self.camera}{self.get_parameter('/depth_topic').get_parameter_value().string_value}"
+        self.camera_info_topic = f"/camera/{self.camera}{self.get_parameter('/camera_info_topic').get_parameter_value().string_value}"
+        self.rgb_topic = f"/camera/{self.camera}{self.get_parameter('/rgb_topic').get_parameter_value().string_value}"
+        # print(f"Using topics: depth={self.depth_topic}, camera_info={self.camera_info_topic}, rgb={self.rgb_topic}")
+        
+        self.camera_link = f"{self.camera}_color_optical_frame"
+
         # Retrieve workspace limits
         self.declare_parameter('/xlim', '[0.2, 0.75]')
         self.declare_parameter('/ylim', '[-0.35, 0.35]')
         self.declare_parameter('/zlim', '[0.04, 0.5]')
-
-        rgb_topic = self.camera + self.get_parameter("/rgb_topic").get_parameter_value().string_value
-        depth_topic = self.camera + self.get_parameter("/depth_topic").value
-        camera_info_topic = self.camera + self.get_parameter("/camera_info_topic").value
-        
-        # Retrieve workspace limits
-        self.xlim = ast.literal_eval(self.get_parameter('/xlim').value)
-        self.ylim = ast.literal_eval(self.get_parameter('/ylim').value)
-        self.zlim = ast.literal_eval(self.get_parameter('/zlim').value)
+        self.xlim = ast.literal_eval(self.get_parameter('/xlim').get_parameter_value().string_value)
+        self.ylim = ast.literal_eval(self.get_parameter('/ylim').get_parameter_value().string_value)
+        self.zlim = ast.literal_eval(self.get_parameter('/zlim').get_parameter_value().string_value)
+        # print(f"Workspace limits: xlim={self.xlim}, ylim={self.ylim}, zlim={self.zlim}")
 
         self.bridge = CvBridge()
 
@@ -56,15 +58,14 @@ class HandEstimation(Node):
         self.tf_ready = False
         
         self.mp_hands = mp.solutions.hands
-        self.hands = self.mp_hands.Hands(model_complexity=1,
-                                         min_detection_confidence = 0.6, min_tracking_confidence = 0.3, max_num_hands = 2)
+        self.hands = self.mp_hands.Hands(model_complexity=1, min_detection_confidence = 0.6, min_tracking_confidence = 0.3, max_num_hands = 2)
 
         # Subscribers
         self.intrinsics = None
-        self.cam_info_sub = self.create_subscription(CameraInfo, camera_info_topic, self.camera_info_callback, 1)
+        self.cam_info_sub = self.create_subscription(CameraInfo, self.camera_info_topic, self.camera_info_callback, 1)
 
-        self.img_reader = message_filters.Subscriber(self, Image, rgb_topic)
-        self.depth_reader = message_filters.Subscriber(self, Image, depth_topic)
+        self.img_reader = message_filters.Subscriber(self, Image, self.rgb_topic)
+        self.depth_reader = message_filters.Subscriber(self, Image, self.depth_topic)
 
         self.ts = message_filters.ApproximateTimeSynchronizer([self.img_reader, self.depth_reader], 1, slop = 0.05) 
         self.ts.registerCallback(self.run_inference)
@@ -88,7 +89,7 @@ class HandEstimation(Node):
              
         if not self.tf_ready:
              try:
-                 t = self.tf_buffer.lookup_transform("world", self.camera + "_color_optical_frame", rclpy.time.Time())
+                 t = self.tf_buffer.lookup_transform("world", self.camera_link, rclpy.time.Time())
                  self.trans = [t.transform.translation.x, t.transform.translation.y, t.transform.translation.z]
                  self.rot = [t.transform.rotation.x, t.transform.rotation.y, t.transform.rotation.z, t.transform.rotation.w]
                  self.tf_ready = True

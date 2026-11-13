@@ -7,7 +7,7 @@ from sensor_msgs.msg import PointCloud2
 import open3d as o3d
 from std_msgs.msg import Header
 from vision_msgs.msg import BoundingBox3D
-from src.handover_vision.handover_vision.utils import convertCloudFromOpen3dToRos, convertCloudFromRosToOpen3d
+from handover_vision.utils import convertCloudFromOpen3dToRos, convertCloudFromRosToOpen3d
 import tf2_ros
 from tf2_sensor_msgs.tf2_sensor_msgs import do_transform_cloud
 from geometry_msgs.msg import PoseStamped, Pose, Vector3, Transform, Quaternion, Point
@@ -16,14 +16,19 @@ class PointCloudCombiner(Node):
     def __init__(self):
         super().__init__('point_cloud_combiner')
 
+        self.declare_parameter('camera_name1', 'camera')
+        self.declare_parameter('camera_name2', 'camera')
+        self.camera_name1 = self.get_parameter('camera_name1').get_parameter_value().string_value
+        self.camera_name2 = self.get_parameter('camera_name2').get_parameter_value().string_value
+
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
         self.trans_camera1 = None
         self.trans_camera2 = None
 
-        pc1_table_sub = message_filters.Subscriber(self, PointCloud2, '/realsense1_object_pc')
-        pc2_table_sub = message_filters.Subscriber(self, PointCloud2, '/realsense2_object_pc')
+        pc1_table_sub = message_filters.Subscriber(self, PointCloud2, f'/{self.camera_name1}_object_pc')
+        pc2_table_sub = message_filters.Subscriber(self, PointCloud2, f'/{self.camera_name2}_object_pc')
         
         self.ts_table = message_filters.ApproximateTimeSynchronizer([pc1_table_sub, pc2_table_sub], queue_size=10, slop=0.1)
         self.ts_table.registerCallback(self.callback)

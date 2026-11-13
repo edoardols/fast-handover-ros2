@@ -6,7 +6,6 @@ Panels:
       Expanded:
         - /Global Options1
         - /TF1
-        - /TF1/Status1
         - /TF1/Frames1
         - /TF1/Tree1
         - /Telecamera RGB1
@@ -52,21 +51,15 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: false
-        camera_color_frame:
+        AprilTag_base_OpenCV:
           Value: true
-        camera_color_optical_frame:
+        AprilTag_base_REP103:
           Value: true
-        camera_link:
+        realsense1_color_frame:
           Value: true
-        raw_tag_base:
-          Value: false
-        raw_tag_cube:
+        realsense1_color_optical_frame:
           Value: true
-        tag_base:
-          Value: true
-        tag_base_camera:
-          Value: true
-        tag_cube:
+        realsense1_link:
           Value: true
         world:
           Value: true
@@ -77,7 +70,9 @@ Visualization Manager:
       Show Names: true
       Tree:
         world:
-          {}
+          AprilTag_base_REP103:
+            AprilTag_base_OpenCV:
+              {}
       Update Interval: 1
       Value: true
     - Class: rviz_default_plugins/Image
@@ -92,7 +87,7 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Best Effort
-        Value: /camera/camera/color/image_raw
+        Value: /camera/realsense1/color/image_raw
       Value: true
   Enabled: true
   Global Options:

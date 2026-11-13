@@ -6,11 +6,8 @@ Panels:
       Expanded:
         - /Global Options1
         - /TF1
-        - /TF1/Status1
         - /TF1/Frames1
         - /TF1/Tree1
-        - /Telecamera RGB1
-        - /Telecamera RGB1/Topic1
       Splitter Ratio: 0.5412843823432922
     Tree Height: 793
   - Class: rviz_common/Selection
@@ -52,21 +49,33 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: false
-        camera_color_frame:
+        AprilTag_base:
           Value: true
-        camera_color_optical_frame:
-          Value: true
-        camera_link:
-          Value: true
-        raw_tag_base:
+        AprilTag_base_OpenCV:
           Value: false
-        raw_tag_cube:
+        AprilTag_base_REP103:
+          Value: false
+        AprilTag_place:
           Value: true
-        tag_base:
-          Value: true
-        tag_base_camera:
-          Value: true
-        tag_cube:
+        realsense1_aligned_depth_to_infra1_frame:
+          Value: false
+        realsense1_color_frame:
+          Value: false
+        realsense1_color_optical_frame:
+          Value: false
+        realsense1_depth_frame:
+          Value: false
+        realsense1_depth_optical_frame:
+          Value: false
+        realsense1_infra1_frame:
+          Value: false
+        realsense1_infra1_optical_frame:
+          Value: false
+        realsense1_infra2_frame:
+          Value: false
+        realsense1_infra2_optical_frame:
+          Value: false
+        realsense1_link:
           Value: true
         world:
           Value: true
@@ -77,7 +86,26 @@ Visualization Manager:
       Show Names: true
       Tree:
         world:
-          {}
+          AprilTag_base_REP103:
+            AprilTag_base_OpenCV:
+              realsense1_link:
+                realsense1_aligned_depth_to_infra1_frame:
+                  realsense1_infra1_optical_frame:
+                    {}
+                realsense1_color_frame:
+                  realsense1_color_optical_frame:
+                    AprilTag_base:
+                      {}
+                    AprilTag_place:
+                      {}
+                realsense1_depth_frame:
+                  realsense1_depth_optical_frame:
+                    {}
+                realsense1_infra1_frame:
+                  {}
+                realsense1_infra2_frame:
+                  realsense1_infra2_optical_frame:
+                    {}
       Update Interval: 1
       Value: true
     - Class: rviz_default_plugins/Image
@@ -85,14 +113,42 @@ Visualization Manager:
       Max Value: 1
       Median window: 5
       Min Value: 0
-      Name: Telecamera RGB
+      Name: RealSense1
       Normalize Range: true
       Topic:
         Depth: 1
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Best Effort
-        Value: /camera/camera/color/image_raw
+        Value: /camera/realsense1/color/image_raw
+      Value: true
+    - Class: rviz_default_plugins/Image
+      Enabled: true
+      Max Value: 1
+      Median window: 5
+      Min Value: 0
+      Name: MediaPipe1
+      Normalize Range: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /realsense1_mediapipe_output
+      Value: true
+    - Class: rviz_default_plugins/Image
+      Enabled: true
+      Max Value: 1
+      Median window: 5
+      Min Value: 0
+      Name: Yolo1
+      Normalize Range: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /realsense1_yolo_img
       Value: true
   Enabled: true
   Global Options:
@@ -155,10 +211,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.6903977394104004
+      Pitch: 0.6803976893424988
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz_default_plugins)
-      Yaw: 6.198579788208008
+      Yaw: 6.173579216003418
     Saved: ~
 Window Geometry:
   Displays:
@@ -166,10 +222,12 @@ Window Geometry:
   Height: 1016
   Hide Left Dock: false
   Hide Right Dock: false
-  QMainWindow State: 000000ff00000000fd00000002000000000000020d000003a2fc0200000004fb000000100044006900730070006c006100790073010000003b000003a2000000c700fffffffb0000001200530065006c0065006300740069006f006e0000000186000000b10000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007300000001d7000000dd0000005c00fffffffb0000000a00560069006500770073000000025b00000182000000a000ffffff0000000100000140000003a2fc0200000001fc0000003b000003a20000002800fffffffa000000010100000002fb0000000c00430061006d0065007200610000000000ffffffff0000000000000000fb0000001c00540065006c006500630061006d006500720061002000520047004201000005fa000001400000009700ffffff000003e1000003a200000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
-  Selection:
+  MediaPipe1:
     collapsed: false
-  Telecamera RGB:
+  QMainWindow State: 000000ff00000000fd00000002000000000000020d000003a2fc0200000004fb000000100044006900730070006c006100790073010000003b000003a2000000c700fffffffb0000001200530065006c0065006300740069006f006e0000000186000000b10000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007300000001d7000000dd0000005c00fffffffb0000000a00560069006500770073000000025b00000182000000a000ffffff0000000100000140000003a2fc0200000004fc0000003b0000010c0000002800fffffffa000000010100000002fb0000000c00430061006d0065007200610000000000ffffffff0000000000000000fb00000014005200650061006c00530065006e00730065003101000005fa000001400000007a00fffffffb00000014004d006500640069006100500069007000650031010000014d0000015c0000002800fffffffb0000000a0059006f006c006f003101000002af0000012e0000002800fffffffb0000000a0049006d006100670065010000030c000000d10000000000000000000003e1000003a200000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  RealSense1:
+    collapsed: false
+  Selection:
     collapsed: false
   Tool Properties:
     collapsed: false
@@ -178,3 +236,5 @@ Window Geometry:
   Width: 1850
   X: 70
   Y: 27
+  Yolo1:
+    collapsed: false

@@ -19,10 +19,13 @@ public:
 
     timer_ = this->create_wall_timer(
       500ms, std::bind(&CameraTfBroadcaster::broadcast_camera_tf, this));
+
+    this->declare_parameter("camera_name_param", "camera");
   }
 
 private:
   void broadcast_camera_tf() {
+    std::string camera_name = this->get_parameter("camera_name_param").as_string();
     // geometry_msgs::msg::TransformStamped t_cam_to_raw;
     // try {
     //   t_cam_to_raw = tf_buffer_->lookupTransform("camera_color_optical_frame", "raw_tag_base", tf2::TimePointZero);
@@ -50,7 +53,8 @@ private:
     try {
       // Get the transform from the tag_base frame to the camera_link frame 
       // tf_tag_to_camera_link = tf_buffer_->lookupTransform("camera_link", "AprilTag_base", tf2::TimePointZero);
-      tf_tag_to_camera_link = tf_buffer_->lookupTransform("AprilTag_base", "camera_link", tf2::TimePointZero);
+      // tf_tag_to_camera_link = tf_buffer_->lookupTransform("AprilTag_base", "camera_link", tf2::TimePointZero);
+      tf_tag_to_camera_link = tf_buffer_->lookupTransform("AprilTag_base", camera_name + "_link", tf2::TimePointZero);
       // RCLCPP_WARN(this->get_logger(), "TF found");
     } catch (const tf2::TransformException & ex) {
       // If the transform is not available, we can simply return and try again on the next timer callback
@@ -62,7 +66,8 @@ private:
     // tf_tag_to_camera_link.header.stamp = this->get_clock()->now();
     tf_tag_to_camera_link.header.stamp = tf_tag_to_camera_link.header.stamp;
     tf_tag_to_camera_link.header.frame_id = "AprilTag_base_OpenCV";
-    tf_tag_to_camera_link.child_frame_id = "camera_link";
+    // tf_tag_to_camera_link.child_frame_id = "camera_link";
+    tf_tag_to_camera_link.child_frame_id = camera_name + "_link";
 
     tf_broadcaster_->sendTransform(tf_tag_to_camera_link);
   }

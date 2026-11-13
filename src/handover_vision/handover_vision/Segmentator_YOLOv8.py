@@ -9,13 +9,14 @@ class Segmentator:
         self.model = YOLO(weights)  # load an official model
         self.line_thickness = 0.1
         self.conf_thres = conf_thres
+        self.device = 0 if torch.cuda.is_available() else 'cpu'
 
     # accepts a BGR image
     def predict(self, im: np.ndarray):
 
         masks = None
         im0 = im.copy()
-        results = self.model(im, conf=self.conf_thres, stream=False, verbose=False, device=0)
+        results = self.model(im, conf=self.conf_thres, stream=False, verbose=False, device=self.device)
 
         classes = list()
 

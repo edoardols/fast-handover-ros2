@@ -15,8 +15,13 @@ class SensorFusionKalmanNode(Node):
         super().__init__("sensor_fusion_kalman_node")
         
         # Subscribers for two camera inputs
-        self.sub_cam1 = self.create_subscription(PoseStamped, "realsense1_hand_detection", self.camera1_callback, 10)
-        self.sub_cam2 = self.create_subscription(PoseStamped, "realsense2_hand_detection", self.camera2_callback, 10)
+        self.declare_parameter('camera_name1', 'camera')
+        self.declare_parameter('camera_name2', 'camera')
+        self.camera_name1 = self.get_parameter('camera_name1').get_parameter_value().string_value
+        self.camera_name2 = self.get_parameter('camera_name2').get_parameter_value().string_value
+
+        self.sub_cam1 = self.create_subscription(PoseStamped, f"{self.camera_name1}_hand_detection", self.camera1_callback, 10)
+        self.sub_cam2 = self.create_subscription(PoseStamped, f"{self.camera_name2}_hand_detection", self.camera2_callback, 10)
         
         # Publisher for fused pose
         self.fused_pub = self.create_publisher(PoseStamped, "hand_pose", 10)

@@ -1,0 +1,17 @@
+mediapipe=0.10.5
+# numpy==1.20.3
+numpy<2.0.0
+open3d
+# ultralytics==8.0.70
+ultralytics
+pyrealsense2
+# Pillow==9.2.0
+Pillow
+numpy-quaternion
+filterpy
+setuptools<80
+# Required for Kortex-API
+protobuf==3.20.0
+transforms3d>=0.4.1
+numba>=0.58.0
+coverage>=7.0
